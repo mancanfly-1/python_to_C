@@ -1,0 +1,9 @@
+Assign(
+targets=[Name(id='refcnt', ctx=Store())], 
+value=Call(
+	func=Name(id='Refcnt2', ctx=Load()), 
+	args=[Name(id='fn_t', ctx=Load()), Tuple(elts=[Name(id='pid_t', ctx=Load()), Name(id='fd_t', ctx=Load())], ctx=Load()), Name(id='size_t', ctx=Load())], 
+	keywords=[], 
+	starargs=None, 
+	kwargs=None)
+	)

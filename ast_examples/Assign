@@ -1,9 +1,1 @@
-Assign(
-targets=[Name(id='refcnt', ctx=Store())], 
-value=Call(
-	func=Name(id='Refcnt2', ctx=Load()), 
-	args=[Name(id='fn_t', ctx=Load()), Tuple(elts=[Name(id='pid_t', ctx=Load()), Name(id='fd_t', ctx=Load())], ctx=Load()), Name(id='size_t', ctx=Load())], 
-	keywords=[], 
-	starargs=None, 
-	kwargs=None)
-	)
+Module(body=[Expr(value=Compare(left=Attribute(value=Subscript(value=Attribute(value=Name(id='old', ctx=Load()), attr='procs', ctx=Load()), slice=Index(value=Name(id='pid', ctx=Load())), ctx=Load()), attr='ppid', ctx=Load()), ops=[Eq()], comparators=[Attribute(value=Name(id='old', ctx=Load()), attr='current', ctx=Load())]))])

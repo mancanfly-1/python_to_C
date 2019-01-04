@@ -1,1 +1,0 @@
-Module(body=[Expr(value=Compare(left=Attribute(value=Subscript(value=Attribute(value=Name(id='old', ctx=Load()), attr='procs', ctx=Load()), slice=Index(value=Name(id='pid', ctx=Load())), ctx=Load()), attr='ppid', ctx=Load()), ops=[Eq()], comparators=[Attribute(value=Name(id='old', ctx=Load()), attr='current', ctx=Load())]))])

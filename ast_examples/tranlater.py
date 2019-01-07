@@ -1,10 +1,7 @@
-import sys
 import ast
 import astor
-from cond_to_if import *
-from util_z3 import *
+import sys
 import collector
-# from exmaple1 import type_class
 
 src_code = []
 list_args = []
@@ -210,47 +207,6 @@ class CodeVisitor(ast.NodeVisitor):
 	# def visit_Call(self, node):
 	# 	ast.NodeVisitor.generic_visit(self, node)
 
-if __name__ == "__main__":
-	if len(sys.argv) > 1:
-		code = open(sys.argv[1]).read()
-		tree = ast.parse(code, sys.argv[1])
-
-		mycollector = collector.CollectVisitor()
-		mycollector.visit(tree)
-		# print collector.Dic_condition
-		# print collector.list_lib
-		print collector.Dic_new_state
-		# get relavent information
-		codevisitor = CodeVisitor()
-		transformer = mytransformer()
-
-		if type(tree) == ast.Module:
-			for i in range(0, len(tree.body)):
-				current_node = tree.body[i]
-
-				print 'begin transformer...'
-				node = transformer.visit(tree.body[i])
-				print astor.to_source(node)
-				if type(tree.body[i]) == ast.FunctionDef:
-					str_del_new_old_state = astor.to_source(node)
-					for new_state in collector.Dic_new_state[current_func]:
-						str_del_new_old_state = str_del_new_old_state.replace(new_state + '.', '')
-					str_del_new_old_state = str_del_new_old_state.replace(collector.Dic_old_state[current_func] + '.', '')
-					node = ast.parse(str_del_new_old_state)
-				print 'transform end...'
-				print astor.to_source(node)	
-				node = codevisitor.visit(node)
-				list_args = []
-					
-		path = sys.argv[1][:-2] + "c"
-
-		file = open(path, 'w')
-		#print src_code
-		for line in src_code:
-			file.write(line + '\n')
-		src_code = []
-
-	else:
-		print('Please provdie a filename as arguments!!')
-
-
+def Translate(root_node):
+	trans = mytransformer()
+	return trans.visit(root_node)

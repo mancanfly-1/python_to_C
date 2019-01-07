@@ -105,6 +105,9 @@ def get_condition_expression(node):
 	str_return = get_expression(node)[:-3] + ")"
 	return str_return
 
+# def visit_Call(namespace, method, args):
+# 	return ''
+
 # if __name__ == "__main__":
 # 	if len(sys.argv) > 1:
 		

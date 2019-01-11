@@ -169,6 +169,7 @@ def Collect(tree):
 	print 'Dic_func_args:', Dic_func_args
 
 
+
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
 		code = open(sys.argv[1]).read()
@@ -182,8 +183,8 @@ if __name__ == "__main__":
 				codevisitor.visit(tree.body[i])
 		init_new_state()
 		print 'Dic_condition:', Dic_condition
-		print 'Dic_old_state:',Dic_old_state
-		print 'Dic_new_state:',Dic_new_state
+		print 'Dic_old_state:', Dic_old_state
+		print 'Dic_new_state:', Dic_new_state
 		print 'Dic_func_args:', Dic_func_args
 	
 	else:

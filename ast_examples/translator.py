@@ -71,8 +71,11 @@ class CondtionTransformer(ast.NodeTransformer):
 
 			if ast.Return == type(item):
 				return index
-			# assgin type
 			if ast.Assign == type(item):
+				if len(item.targets) == 1 and type(item.targets[0]) == ast.Name and item.targets[0].id in Dic_new_state[current_func] and item.targets[0].id != assign_name:
+					return index
+			# assgin type
+			if ast.Assign == type(item) or ast.AugAssign == type(item):
 				str_split = astor.to_source(item)[:-1].split('.')
 				if str_split != [] and str_split[0] in Dic_new_state[current_func] and str_split[0] != assign_name:
 					return index				
@@ -167,20 +170,23 @@ class CondtionTransformer(ast.NodeTransformer):
 			else:
 				# util.if(cond, new1,new2)
 				str_cond_node = ''
-				if type(cond_name) == ast.Assign:
-					str_cond_node = astor.to_source(cond_name.value)
+				if type(cond_node) == ast.Assign:
+					str_cond_node = astor.to_source(cond_node.value)
 				else:
-					str_cond_node = cond_name				
-				if_node = ast.If(ast.parse(str_cond_node), [], [])
-
+					str_cond_node = cond_name
+				# insert this node, why not work use ast.parse(string)????
+				if_node = ast.If(cond_node.value, [], [])
+				#if_node = ast.parse("if " + str_cond_node + ":\n" + "    " + "a=1")
+				insert_node.body.insert(insert_index, if_node)
 				# bodies
 				if state_node_1 != None:
 					#self.add_body(if_node.body, state_name_1)
 					# get all of statement with specific name
 					list_insert = self.get_insert_list(state_name_1)
 					for item in list_insert:
-						if_node.body.append(item)
-					insert_node.body.insert(insert_index, if_node)
+						if item != cond_node:
+							if_node.body.append(item)
+					#insert_node.body.insert(insert_index, if_node)
 				else:
 					if state_name_1 == Dic_old_state[current_func] + '.copy()':
 						if_node.body.append(astor.to_source('return 0'))
@@ -216,19 +222,58 @@ class DetailTransformer(ast.NodeTransformer):
 			assert(False)
 		ast.NodeTransformer.generic_visit(self, node)
 		return node
+	
 	def visit_Assign(self, node):
-		str_assgin = astor.to_source(node)
-		if str_assgin in Dic_new_state[current_func]:
-			# delete this node
-			current_node.body.delete(node)
-		state = str_assgin.split('.')[0]
-		if state in Dic_new_state[current_func]:
-			str_assgin = str_assgin[len(state) + 1:]
-			print str_assgin
-			
-			node = ast.parse(str_assgin)
+		node = self.remove_state(node)
+		if node != None:
+			ast.NodeTransformer.generic_visit(self, node)
+			return node
+
+	def visit_AugAssign(self, node):
+		node = self.remove_state(node)
 		ast.NodeTransformer.generic_visit(self, node)
 		return node
+
+	def visit_Call(self, node):
+		if len(node.args) > 0:
+			index = 0
+			for index in range(0, len(node.args)):
+				arg = node.args[index]
+				str_arg = astor.to_source(arg)[:-1].split('.')
+				if len(str_arg) > 0 and str_arg[0] in Dic_new_state[current_func]:
+					new_arg = astor.to_source(arg)[:-1][len(str_arg[0]) + 1:]
+					# the type of ast.parse(new_arg) is a module			
+					node.args[index] = ast.parse(new_arg).body[0].value
+
+		ast.NodeTransformer.generic_visit(self, node)
+		return node			
+
+	def remove_state(self, node):
+		if type(node) == ast.AugAssign:
+		# more than one return is not allowed.
+			str_assgin = astor.to_source(node.target)[:-1]
+		elif type(node) == ast.Assign:
+			str_assgin = astor.to_source(node.targets[0])[:-1]
+		if str_assgin in Dic_new_state[current_func]:
+			# get parent node and delete this node
+			#node.parent.body.remove(node)
+			node = None
+			return node
+		state = str_assgin.split('.')[0]
+
+		if state in Dic_new_state[current_func]:
+			if type(node) == ast.AugAssign:
+				addorsub = ''
+				if node.op == 'Add':
+					addorsub = ' += '
+				else:
+					addorsub = ' -= '
+				str_assgin = str_assgin[len(state) + 1:] + addorsub + astor.to_source(node.value)[:-1]
+			elif type(node) == ast.Assign:
+				str_assgin = str_assgin[len(state) + 1:] +' = '+ astor.to_source(node.value)[:-1]
+			node = ast.parse(str_assgin)
+		return node
+
 def Translate(root_node):
 	# second, detail translate
 	trans = CondtionTransformer()

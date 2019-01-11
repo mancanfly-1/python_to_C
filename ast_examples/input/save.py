@@ -1,3 +1,28 @@
+# def sys_recv(old, pid, pn, fd):
+#     cond = z3.And(
+#         is_pid_valid(pid),
+#         old.procs[pid].state == dt.proc_state.PROC_RUNNABLE,
+
+#         is_pn_valid(pn),
+#         old.pages[pn].owner == old.current,
+#         old.pages[pn].type == dt.page_type.PAGE_TYPE_FRAME,
+
+#         z3.Implies(is_fd_valid(fd),
+#                    z3.Not(is_fn_valid(old.procs[old.current].ofile(fd))))
+#     )
+
+#     new = old.copy()
+
+#     new.procs[old.current].ipc_from = z3.BitVecVal(0, dt.pid_t)
+#     new.procs[old.current].ipc_page = pn
+#     new.procs[old.current].ipc_size = z3.BitVecVal(0, dt.size_t)
+#     new.procs[old.current].ipc_fd = fd
+
+#     new.procs[old.current].state = dt.proc_state.PROC_SLEEPING
+#     new.procs[pid].state = dt.proc_state.PROC_RUNNING
+#     new.current = pid
+
+#     return cond, util.If(cond, new, old)
 def send_recv(old, pid, val, inpn, size, infd, outpn, outfd):
     cond = z3.And(
         is_pid_valid(pid),
@@ -64,29 +89,5 @@ def send_recv(old, pid, val, inpn, size, infd, outpn, outfd):
 
     return cond, util.If(cond, new3, old)
 
-def sys_recv(old, pid, pn, fd):
-    cond = z3.And(
-        is_pid_valid(pid),
-        old.procs[pid].state == dt.proc_state.PROC_RUNNABLE,
 
-        is_pn_valid(pn),
-        old.pages[pn].owner == old.current,
-        old.pages[pn].type == dt.page_type.PAGE_TYPE_FRAME,
-
-        z3.Implies(is_fd_valid(fd),
-                   z3.Not(is_fn_valid(old.procs[old.current].ofile(fd))))
-    )
-
-    new = old.copy()
-
-    new.procs[old.current].ipc_from = z3.BitVecVal(0, dt.pid_t)
-    new.procs[old.current].ipc_page = pn
-    new.procs[old.current].ipc_size = z3.BitVecVal(0, dt.size_t)
-    new.procs[old.current].ipc_fd = fd
-
-    new.procs[old.current].state = dt.proc_state.PROC_SLEEPING
-    new.procs[pid].state = dt.proc_state.PROC_RUNNING
-    new.current = pid
-
-    return cond, util.If(cond, new, old)
 

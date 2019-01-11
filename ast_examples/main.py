@@ -12,6 +12,11 @@ def main(root_node, path):
 		root = Translate(root_node)
 		# translate py to C code.
 		#Python_to_C(root, path)
+def add_parent(root):
+    for node in ast.walk(root):
+        for child in ast.iter_child_nodes(node):
+            child.parent = node
+    return root
 
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
@@ -19,6 +24,9 @@ if __name__ == "__main__":
 		tree = ast.parse(code, sys.argv[1])
 		# collect a lot of things
 		Collect(tree)
+		# add parent node 
+		add_parent(tree)
+
 		Translate(tree)
 		path = sys.argv[1][:-2] + "c"
 		#main(tree, path)

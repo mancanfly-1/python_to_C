@@ -1,9 +1,9 @@
 import sys
 import ast
 import astor
-from cond_to_if import * 
+#from cond_to_if import * 
 
-# Dic_condition = {'funcdef':{'condition':[new1, old], 'condition2':[new1, new2],...}, 'funcdef2':{...}}
+# Dic_condition = {'funcdef':[['condition',new1, old], ['condition2',new1, new2],...]}, 'funcdef2':{...}}
 Dic_condition = {}
 # Dic_new_state = {'funcdef':[new, new1, new2...], 'funcdef2':[...]}
 Dic_new_state = {}
@@ -12,11 +12,13 @@ Dic_old_state = {}
 # Dic_func_args = {'funcdef': [arg1, arg2...], }
 Dic_func_args = {}
 
+Dic_func_bodys = {}
+
 # condition = []
 list_lib = []
 current_def =''
 
-
+# get the condtion, state, and function arguments to every function. and get the import information
 class CollectVisitor(ast.NodeVisitor):
 	def generic_visit(self, node):
 		#print type(node).__name__
@@ -30,12 +32,10 @@ class CollectVisitor(ast.NodeVisitor):
 		# initial some global things
 		global current_def 
 		current_def = node.name
-		Dic_condition[current_def] = {}
+		Dic_condition[current_def] = []
 		Dic_new_state[current_def] =[]
 		Dic_func_args[current_def] = []
-
-		# Traversal
-		for item in node.body:
+		Dic_func_bodys[current_def] = node.body
 
 		#print current_def
 		ast.NodeVisitor.generic_visit(self, node)
@@ -43,9 +43,11 @@ class CollectVisitor(ast.NodeVisitor):
 	def visit_arguments(self, node):
 		if len(node.args) > 0:
 			# collect old state
-			Dic_old_state[current_def] = node.args[0].id
-			for item in node.args:
-				Dic_func_args[current_def].append(item.id)
+			if not Dic_old_state.has_key(current_def):
+				Dic_old_state[current_def] = node.args[0].id
+				print Dic_old_state[current_def]
+				for item in node.args:
+					Dic_func_args[current_def].append(item.id)
 		else:
 			print('error definition of system call')
 			assert(False)
@@ -71,48 +73,101 @@ class CollectVisitor(ast.NodeVisitor):
 
 	def visit_Assign(self, node):
 		# collect new state
-		if type(node.value) == ast.Call and type(node.value.func) == ast.Attribute:
-			if type(node.value.func.value) == ast.Name and node.value.func.attr == 'copy':
-				if node.value.func.value.id in Dic_old_state[current_def] or Dic_new_state[current_def]:
-					Dic_new_state[current_def].append(node.targets[0].id)
-			if type(node.value.func.value) == ast.Name and node.value.func.attr == 'If':
-				list_args = node.value.args
-				# utile.If(a,b,c)
-				a = list_args[1]
-				b = list_args[2]
-				if a.id in Dic_new_state[current_def] and b.id in Dic_new_state[current_def]:
-					Dic_new_state[current_def].append(node.targets[0].id)
+		# if type(node.value) == ast.Call and type(node.value.func) == ast.Attribute:
+		# 	if type(node.value.func.value) == ast.Name and node.value.func.attr == 'copy':
+		# 		if node.value.func.value.id in Dic_old_state[current_def] or Dic_new_state[current_def]:
+		# 			Dic_new_state[current_def].append(node.targets[0].id)
+		# 	if type(node.value.func.value) == ast.Name and node.value.func.attr == 'If':
+		# 		list_args = node.value.args
+		# 		# utile.If(a,b,c)
+		# 		a = list_args[1]
+		# 		b = list_args[2]
+		# 		if a.id in Dic_new_state[current_def] and b.id in Dic_new_state[current_def]:
+		# 			Dic_new_state[current_def].append(node.targets[0].id)
 		ast.NodeVisitor.generic_visit(self, node)			
+
+	def bool_condtion(self, arg1, arg2):
+		if arg1 == Dic_old_state[current_def] or arg2 == Dic_old_state[current_def]:
+			return True
+		# why and?
+		if arg1 in Dic_new_state[current_def] and arg2 in Dic_new_state[current_def]:
+			return True
+		return False
 
 	def visit_Call(self, node):	
 		# collect condtions	
-		if type(node.func) == ast.Attribute:
-			# check if invoke util.If function
-			if node.func.attr == 'If' and type(node.func.value) == ast.Name and node.func.value.id == 'util':
-				# new3 = util.If(cond2, new2, new)
-				# get argument[1][2]
-				list_args = node.value.args
-				a = list_args[1]
-				b = list_args[2]
-				if type(a) == ast.Name and type(b) == ast.Name:					
-					if a.id in Dic_new_state[current_def] and b.id in Dic_new_state[current_def]:
-						Dic_new_state[current_def].append(list_args[0].id)
-					if Dic_condition[current_def].count(astor.to_source(node.args[0])[:-1]) == 0:
-						Dic_condition[current_def].append(astor.to_source(node.args[0])[:-1])
-			
-
+		# if type(node.func) == ast.Attribute:
+		# 	# check if invoke util.If function
+		# 	if node.func.attr == 'If' and type(node.func.value) == ast.Name and node.func.value.id == 'util':
+		# 		# new3 = util.If(cond2, new2, new)
+		# 		# get argument[1][2]
+		# 		list_args = node.args
+		# 		a = list_args[1]
+		# 		b = list_args[2]
+		# 		# Dic_condition = {'funcdef':{'condition':[new1, old], 'condition2':[new1, new2],...}, 'funcdef2':{...}}
+		# 		if type(a) == ast.Name and type(b) == ast.Name:
+		# 			if self.bool_condtion(a.id, b.id):
+		# 				# add condition
+		# 				cond = list_args[0].id
+		# 				tmp_cond = [a.id,b.id]
+		# 				Dic_condition[current_def][cond] = tmp_cond
+		# 				print Dic_condition
 		ast.NodeVisitor.generic_visit(self, node)
 
-class ConditionVisitor(ast.NodeVisitor):
-	def generic_visit(self, node):
-		ast.NodeVisitor.generic_visit(self, node)
-		return node
+	def visit_Return(self, node):
+		# util.If(cond, new, old)
+		util_if = node.value.elts[1]
+		cond = astor.to_source(util_if.args[0])[:-1]
+		new1 = astor.to_source(util_if.args[1])[:-1]
+		new2 = astor.to_source(util_if.args[2])[:-1]
+		tmp_cond = [cond, new1,new2]
+		Dic_condition[current_def].append(tmp_cond)
+		get_condtions(util_if.args[1])
+		get_condtions(util_if.args[2])
 
+def node_euqals_util_If(body):
+	if type(body) == ast.Call:
+		if type(body.func) == ast.Attribute and body.func.attr == 'If' and type(body.func.value) == ast.Name and body.func.value.id == 'util':
+			return True
+	return False
 
+# reconstruct the function node.
+def get_condtions(new1):
+	if type(new1) == ast.Name:
+		for body in Dic_func_bodys[current_def]:
+			if type(body) == ast.Assign and len(body.targets) == 1:	
+				if type(body.targets[0]) == ast.Name:	
+					if body.targets[0].id == new1.id and node_euqals_util_If(body.value):
+						args = body.value.args
+						cond1 = astor.to_source(args[0])[:-1]
+						new11 = astor.to_source(args[1])[:-1]
+						new22 = astor.to_source(args[2])[:-1]
 
-def Collect(node):
+						tmp_cond = [cond1, new11,new22]
+						Dic_condition[current_def].append(tmp_cond)
+						get_condtions(new11)
+						get_condtions(new22)			
+def init_new_state():
+	for fun in Dic_condition:
+		list_if_condtion = Dic_condition[fun]
+		if list_if_condtion != None:
+			for item in list_if_condtion:
+				if item[2] not in Dic_new_state[fun] and item[2] != Dic_old_state[fun]:
+					Dic_new_state[fun].append(item[2])
+				if item[1] not in Dic_new_state[fun] and item[1] != Dic_old_state[fun]:
+					Dic_new_state[fun].append(item[1])
+
+def Collect(tree):
 	codevisitor = CollectVisitor()
-	codevisitor.visit(node)
+	if type(tree) == ast.Module:
+		for i in range(0, len(tree.body)):
+			codevisitor.visit(tree.body[i])
+	init_new_state()
+	print 'Dic_condition:', Dic_condition
+	print 'Dic_old_state:',Dic_old_state
+	print 'Dic_new_state:',Dic_new_state
+	print 'Dic_func_args:', Dic_func_args
+
 
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
@@ -125,11 +180,12 @@ if __name__ == "__main__":
 		if type(tree) == ast.Module:
 			for i in range(0, len(tree.body)):
 				codevisitor.visit(tree.body[i])
-		print Dic_condition
-		print list_lib
-		print Dic_old_state
-		print Dic_new_state
-		print Dic_func_args
+		init_new_state()
+		print 'Dic_condition:', Dic_condition
+		print 'Dic_old_state:',Dic_old_state
+		print 'Dic_new_state:',Dic_new_state
+		print 'Dic_func_args:', Dic_func_args
+	
 	else:
 		print('Please provdie a filename as arguments!!')
 

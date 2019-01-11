@@ -18,6 +18,13 @@ class mytransformer(ast.NodeTransformer):
         
         ast.NodeTransformer.generic_visit(self, node)
         return node
+    def visit_FunctionDef(self, node):
+        ret_str = "return 0"
+        node.body =[]
+        #print node.body
+        #node.body.append(ast.parse(ret_str))
+        ast.NodeTransformer.generic_visit(self, node)
+        return node
 
 def add_parent(root):
     for node in ast.walk(root):

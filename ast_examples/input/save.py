@@ -1,43 +1,92 @@
-import z3
-from libirpy import util
-import datatype.datatypes as dt
-
-# # reclaim a procs
-def int_sys_reap(state_old, pid_t_pid):
+def send_recv(old, pid, val, inpn, size, infd, outpn, outfd):
     cond = z3.And(
-        is_pid_valid(pid_t_pid),
-        # Only the owner can reap a child
-        state_old.procs[pid_t_pid].ppid == state_old.current,
+        is_pid_valid(pid),
 
-        # The pid to reap is a zombie
-        state_old.procs[pid_t_pid].state == dt.proc_state.PROC_ZOMBIE,
+        old.procs[pid].state == dt.proc_state.PROC_SLEEPING,
 
-        # The proc has no children
-        state_old.procs[pid_t_pid].nr_children() == z3.BitVecVal(0, dt.size_t)
+        # inpn is a valid pn and belongs to current
+        is_pn_valid(inpn),
+        old.pages[inpn].owner == old.current,
+
+        z3.ULE(size, dt.PAGE_SIZE),
+
+        z3.Implies(is_fd_valid(infd),
+                   is_fn_valid(old.procs[old.current].ofile(infd))),
+
+        # outpn is a valid pn and belongs to current
+        is_pn_valid(outpn),
+        old.pages[outpn].owner == old.current,
+        old.pages[outpn].type == dt.page_type.PAGE_TYPE_FRAME,
+
+        z3.Implies(is_fd_valid(outfd),
+                   z3.Not(is_fn_valid(old.procs[old.current].ofile(outfd)))),
+
+        # if ipc from is set, it must be set to current
+        z3.Implies(old.procs[pid].ipc_from != 0,
+                   old.procs[pid].ipc_from == old.current)
     )
-    # set 
-    new = state_old.copy()
 
-    new.procs[state_old.current].nr_children[pid_t_pid] -= 1
-    #zero out pid's property
-    new.procs[pid_t_pid].state = dt.proc_state.PROC_UNUSED
-    new.procs[pid_t_pid].ppid = z3.BitVecVal(0, dt.pid_t)
-    new.procs[pid_t_pid].killed = z3.BoolVal(False)
-    new2 = state_old.copy()
-    new3 = util.If(cond, new2, new)
+    new = old.copy()
 
-    return cond, util.If(cond, new, state_old)
+    new.procs[old.current].ipc_page = outpn
+    new.procs[old.current].ipc_fd = outfd
 
-def int_sys_set_runnable(state_old, pid_pid):
-	cond = z3.And(
-		is_pid_valid(pid_pid),
-		state_old.procs[pid_pid].ppid == state_old.current,
-		state_old.procs[pid_pid].state == proc_state.PROC_EMBRYO,
-		z3.Or(pid_pid == state_old.current,
-              z3.And(
-                  state_old.procs[pid_pid].ppid == state_old.current,
-                  state_old.procs[pid_pid].state == proc_state.PROC_EMBRYO)))
+    new.procs[pid].ipc_from = old.current
+    new.procs[pid].ipc_val = val
 
-	new = state_old.copy()
-	new.procs[pid_pid].state = procs_state.PROC_RUNNABLE
-	return cond, util.If(cond, new, state_old)
+    # memcpy
+    new.pages.data = lambda pn0, idx0, oldfn=new.pages.data: \
+        util.If(z3.And(pn0 == old.procs[pid].ipc_page, z3.ULT(idx0, size)),
+                oldfn(inpn, idx0),
+                oldfn(pn0, idx0))
+
+    new.procs[pid].ipc_size = size
+
+    new2 = new.copy()
+
+    cond2 = z3.And(is_fd_valid(infd), is_fd_valid(new2.procs[pid].ipc_fd))
+
+    fn = old.procs[old.current].ofile(infd)
+    fd = old.procs[pid].ipc_fd
+
+    new2.procs[pid].ofile[fd] = fn
+
+    # bump proc nr_fds
+    new2.procs[pid].nr_fds[fd] += 1
+
+    # bump file refcnt
+    new2.files[fn].refcnt[(pid, fd)] += 1
+
+    new3 = util.If(cond2, new2, new)
+
+    new3.procs[old.current].state = dt.proc_state.PROC_SLEEPING
+    new3.procs[pid].state = dt.proc_state.PROC_RUNNING
+
+    return cond, util.If(cond, new3, old)
+
+def sys_recv(old, pid, pn, fd):
+    cond = z3.And(
+        is_pid_valid(pid),
+        old.procs[pid].state == dt.proc_state.PROC_RUNNABLE,
+
+        is_pn_valid(pn),
+        old.pages[pn].owner == old.current,
+        old.pages[pn].type == dt.page_type.PAGE_TYPE_FRAME,
+
+        z3.Implies(is_fd_valid(fd),
+                   z3.Not(is_fn_valid(old.procs[old.current].ofile(fd))))
+    )
+
+    new = old.copy()
+
+    new.procs[old.current].ipc_from = z3.BitVecVal(0, dt.pid_t)
+    new.procs[old.current].ipc_page = pn
+    new.procs[old.current].ipc_size = z3.BitVecVal(0, dt.size_t)
+    new.procs[old.current].ipc_fd = fd
+
+    new.procs[old.current].state = dt.proc_state.PROC_SLEEPING
+    new.procs[pid].state = dt.proc_state.PROC_RUNNING
+    new.current = pid
+
+    return cond, util.If(cond, new, old)
+

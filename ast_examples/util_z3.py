@@ -1,5 +1,6 @@
 import sys
 import ast
+import astor
 def z3_First_Order_Operate(type, *args):
 	assert(type in ["AND","OR"])
 
@@ -91,13 +92,32 @@ def Split_z3_And_Or_condition(node):
 	str_return = get_expression(node)[:-3] + ")"
 	return str_return
 
-def Split_z3_Implies_condition(node):
+def to_source(node):
+	return astor.to_source(node)[:-1]
 
-def deal_z3_value(node):
+def Deal_z3_function(node):
 	if type(node) == ast.Call and type(node.func) == ast.Attribute:
-		if type(node.func.value) == Name: and node.func.value.id == 'z3':
+		#print node.func.value
+		if type(node.func.value) == ast.Name and node.func.value.id == 'z3':
+			args = node.args
 			if node.func.attr == 'BitVecVal':
-				return node.args[0]
-	else:
-		return None
+				return ast.Num(node.args[0].id)
+			if node.func.attr == 'And' or node.func.attr == 'Or':			
+				content = ast.BoolOp()
+				if node.func.attr == 'And':
+					content.op = ast.And()
+				else:
+					content.op = ast.Or()
+				content.values = args
+				return content
+			if node.func.attr == 'Not':
+				return node
+				
+			if node.func.attr == 'ULT':
+				str = to_source(args[0]) + ' < ' + to_source(args[1])
+				return ast.parse(str).body[0].value
+			if node.func.attr == 'ULE':
+				str = to_source(args[0]) + ' > ' + to_source(args[1])
+				return ast.parse(str).body[0].value
+	return node
 

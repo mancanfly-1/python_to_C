@@ -2,6 +2,7 @@ import ast
 import astor
 import sys
 from collector import *
+from util_z3 import *
 
 src_code = []
 list_args = []
@@ -9,7 +10,8 @@ cond_body_node = None
 current_func = ''
 current_node = None
 del_node = []
-
+Dic_count = {'process': ['nr_children', 'nr_fds', 'nr_pages', 'nr_dmapages', 'nr_devs', 'nr_ports', 'nr_vectors', 'nr_intremaps']}
+Dic_file_count = {'file':['refcnt']}
 
 class CondtionTransformer(ast.NodeTransformer):
 	"""docstring for mytransformer"""
@@ -199,12 +201,33 @@ class CondtionTransformer(ast.NodeTransformer):
 			i +=1
 		ast.NodeTransformer.generic_visit(self, node)
 		return node
-
+# TODO:z3.Implies; lamda expression; Map and Refcont of the struct must change to number.
 class DetailTransformer(ast.NodeTransformer):
 	def generic_visit(self, node):
 		#print type(node).__name__
 		ast.NodeTransformer.generic_visit(self, node)
 		return node
+	def visit_If(self, node):
+		if type(node.test) == ast.UnaryOp and type(node.test.operand) == ast.Call:
+			# get function name
+			if type(node.test.operand.func) == ast.Attribute and node.test.operand.func.attr == 'Implies' and node.test.operand.func.value.id == 'z3':
+				str = astor.to_source(node.test.operand.args[0])[:-1] + ' and ' + astor.to_source(node.test.operand.args[1])[:-1]
+				node_test = ast.parse(str)
+				# why not work?
+				content = ast.BoolOp()
+				content.op = ast.And()
+				content.values = node.test.operand.args
+				
+				#node.test = node_test.body[0].value
+				node.test = content
+		ast.NodeTransformer.generic_visit(self, node)
+		return node
+
+	# def visit_Call(self, node):
+	# 	node = Deal_z3_function(node)
+	# 	print astor.to_source(node)
+	# 	ast.NodeTransformer.generic_visit(self, node)
+	# 	return node
 
 	def visit_FunctionDef(self, node):
 		current_func = node.name
@@ -231,8 +254,9 @@ class DetailTransformer(ast.NodeTransformer):
 
 	def visit_AugAssign(self, node):
 		node = self.remove_state(node)
-		ast.NodeTransformer.generic_visit(self, node)
-		return node
+		if node != None:
+			ast.NodeTransformer.generic_visit(self, node)
+			return node
 
 	def visit_Call(self, node):
 		if len(node.args) > 0:
@@ -244,9 +268,33 @@ class DetailTransformer(ast.NodeTransformer):
 					new_arg = astor.to_source(arg)[:-1][len(str_arg[0]) + 1:]
 					# the type of ast.parse(new_arg) is a module			
 					node.args[index] = ast.parse(new_arg).body[0].value
-
+		node = Deal_z3_function(node)
+		print astor.to_source(node)
+		# translate like 'process[pid].ofile(fd)' to process[pid].ofile
+		# TODO: ofile must in a collection!!! and the head must be 'process'
+		if type(node) == ast.Call and type(node.func) == ast.Attribute:
+			if node.func.attr == 'ofile':
+				Name = ast.Name();
+				Name.ctx = ast.Load()
+				Name.id = node.args[0].id
+				Index = ast.Index(Name)
+				Subscript = ast.Subscript()
+				Subscript.ctx = ast.Load()
+				Subscript.slice = Index
+				Subscript.value = node.func
+				node = Subscript
+			if type(node) == ast.Call and type(node.func) == ast.Attribute and node.func.attr in Dic_count['process']:
+				node = node.func
 		ast.NodeTransformer.generic_visit(self, node)
-		return node			
+		return node		
+
+	def visit_Subscript(self, node):
+		if type(node.value) == ast.Attribute and node.value.attr in Dic_count['process']:
+			node = node.value
+		if type(node.value) == ast.Attribute and node.value.attr in Dic_file_count['file']:
+			node = node.value
+		ast.NodeTransformer.generic_visit(self, node)
+		return node	
 
 	def remove_state(self, node):
 		if type(node) == ast.AugAssign:
@@ -277,11 +325,24 @@ class DetailTransformer(ast.NodeTransformer):
 def Translate(root_node):
 	# second, detail translate
 	trans = CondtionTransformer()
-	root = trans.visit(root_node)
-	# translate condtions jump.
-	print astor.to_source(root)
+	tree = trans.visit(root_node)
+
+	print astor.to_source(tree)
 	detailTrans = DetailTransformer()
-	root = detailTrans.visit(root)
-	print astor.to_source(root)
+	tree = detailTrans.visit(tree)
+	# delete all of new and old state.
+	for i in range(0, len(tree.body)):
+		node = tree.body[i]
+		if type(node) == ast.FunctionDef:
+			function_name = node.name
+			print function_name
+			str_del_new_old_state = astor.to_source(node)[:-1]
+			for new_state in Dic_new_state[function_name]:
+				
+				str_del_new_old_state = str_del_new_old_state.replace(new_state + '.', '')
+			str_del_new_old_state = str_del_new_old_state.replace(Dic_old_state[function_name] + '.', '')
+			tree.body[i] = ast.parse(str_del_new_old_state)
+	# translate condtions jump.
+	print astor.to_source(tree)
 	
 	

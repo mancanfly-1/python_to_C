@@ -3,7 +3,8 @@ import astor
 import sys
 from collector import *
 from translator import *
-#from py2c import *
+from py2c import *
+
 
 def main(root_node, path):
 	# collect information of current py file.
@@ -29,6 +30,7 @@ if __name__ == "__main__":
 
 		Translate(tree)
 		path = sys.argv[1][:-2] + "c"
+		Python_to_C(tree, path)
 		#main(tree, path)
 	else:
 		print('Please provdie a filename as arguments!!')

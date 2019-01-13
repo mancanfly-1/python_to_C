@@ -33,8 +33,7 @@ def get_arg_type(argument):
         str_ret = str_ret[:-1]
         return str_ret
     else:
-        print('the argument type has a error type!')
-        assert(False)
+        raise Exception('the argument type has a error type!')
 
 def get_arg_name(argument):
     if right_arg(argument):
@@ -47,8 +46,7 @@ def get_arg_name(argument):
         str_ret = str_ret[:-1]
         return str_ret
     else:
-        print('the argument name has a error type!')
-        assert(False)
+        raise Exception('the argument type has a error type!')
 
 
 def get_func_type(func):
@@ -56,15 +54,13 @@ def get_func_type(func):
 		#print type(func.split('_',1)[0])
 		return func.split('_',1)[0]
 	else:
-		print('the argument type has a error type!')
-		assert(False)
+		raise Exception('the argument type has a error type!')
 
 def get_func_name(func):
 	if len(func.split('_')) > 1:
 		return func.split('_',1)[1]
 	else:
-		print('the argument name has a error type!')
-		assert(False)
+		raise Exception('the argument type has a error type!')
 
 def get_error_code(node):
 	return '-ECODE'
@@ -98,11 +94,11 @@ def get_expression(node, str_return=''):
 		#print str_return
 		return str_return
 	else:
-		return astor.to_source(node)[:-1] + "123"
+		return astor.to_source(node)[:-1]
 
 def get_condition_expression(node):
 	str_return =''
-	str_return = get_expression(node)[:-3] + ")"
+	str_return = get_expression(node)[:-1]
 	return str_return
 
 # def visit_Call(namespace, method, args):

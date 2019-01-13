@@ -1,6 +1,7 @@
 import sys
 import ast
 import astor
+from util import *
 #from cond_to_if import * 
 
 # Dic_condition = {'funcdef':[['condition',new1, old], ['condition2',new1, new2],...]}, 'funcdef2':{...}}
@@ -120,10 +121,10 @@ class CollectVisitor(ast.NodeVisitor):
 		cond = astor.to_source(util_if.args[0])[:-1]
 		new1 = astor.to_source(util_if.args[1])[:-1]
 		new2 = astor.to_source(util_if.args[2])[:-1]
-		tmp_cond = [cond, new1,new2]
+		tmp_cond = [cond, new1, new2]
 		Dic_condition[current_def].append(tmp_cond)
-		get_condtions(util_if.args[1])
-		get_condtions(util_if.args[2])
+		get_condtions(new1)
+		get_condtions(new2)
 
 def node_euqals_util_If(body):
 	if type(body) == ast.Call:
@@ -133,20 +134,21 @@ def node_euqals_util_If(body):
 
 # reconstruct the function node.
 def get_condtions(new1):
-	if type(new1) == ast.Name:
-		for body in Dic_func_bodys[current_def]:
-			if type(body) == ast.Assign and len(body.targets) == 1:	
-				if type(body.targets[0]) == ast.Name:	
-					if body.targets[0].id == new1.id and node_euqals_util_If(body.value):
-						args = body.value.args
-						cond1 = astor.to_source(args[0])[:-1]
-						new11 = astor.to_source(args[1])[:-1]
-						new22 = astor.to_source(args[2])[:-1]
+	for body in Dic_func_bodys[current_def]:
+		if type(body) == ast.Assign and len(body.targets) == 1:	
+			if type(body.targets[0]) == ast.Name:
+				if body.targets[0].id == new1 and node_euqals_util_If(body.value):
+					print body.targets[0].id, '-------'
+					args = body.value.args
+					cond1 = astor.to_source(args[0])[:-1]
+					new11 = astor.to_source(args[1])[:-1]
+					new22 = astor.to_source(args[2])[:-1]
 
-						tmp_cond = [cond1, new11,new22]
-						Dic_condition[current_def].append(tmp_cond)
-						get_condtions(new11)
-						get_condtions(new22)			
+					tmp_cond = [cond1, new11,new22]
+					# print tmp_cond, '----------'
+					Dic_condition[current_def].append(tmp_cond)
+					get_condtions(new11)
+					get_condtions(new22)			
 def init_new_state():
 	for fun in Dic_condition:
 		list_if_condtion = Dic_condition[fun]

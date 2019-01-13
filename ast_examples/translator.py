@@ -245,10 +245,13 @@ class DetailTransformer(ast.NodeTransformer):
 		return node
 	
 	def visit_Assign(self, node):
+
+		node = util_if(node, current_func)
 		node = self.remove_state(node)
 		if node != None:
 			ast.NodeTransformer.generic_visit(self, node)
 			return node
+
 
 	def visit_AugAssign(self, node):
 		node = self.remove_state(node)
@@ -297,6 +300,7 @@ class DetailTransformer(ast.NodeTransformer):
 		return node	
 
 	def remove_state(self, node):
+		str_assgin = ''
 		# remove all of 'new' start assgin or augassign
 		if type(node) == ast.AugAssign:
 			str_assgin = astor.to_source(node.target)[:-1]

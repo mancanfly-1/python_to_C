@@ -24,10 +24,22 @@ procs[pid].ofile[newfd] = 0;
 procs[pid].nr_fds -= 1;
 files[newfn].refcnt -= 1;
 ref = files[newfn].refcnt();
-files[newfn].type = util.If(ref == 0, dt.file_type.FD_NONE, files[newfn].type);
-files[newfn].value = util.If(ref == 0, 0, files[newfn].value);
-files[newfn].offset = util.If(ref == 0, 0, files[newfn].offset);
-files[newfn].omode = util.If(ref == 0, 0, files[newfn].omode);
+if (ref == 0){
+files[newfn].type = dt.file_type.FD_NONE;
+files[newfn].type = files[newfn].type;
+}
+if (ref == 0){
+files[newfn].value = 0;
+files[newfn].value = files[newfn].value;
+}
+if (ref == 0){
+files[newfn].offset = 0;
+files[newfn].offset = files[newfn].offset;
+}
+if (ref == 0){
+files[newfn].omode = 0;
+files[newfn].omode = files[newfn].omode;
+}
 }
 fn = procs[current].ofile[oldfd];
 procs[pid].ofile[newfd] = fn;

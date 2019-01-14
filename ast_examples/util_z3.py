@@ -88,12 +88,11 @@ def Deal_z3_function(node):
 			if node.func.attr == 'ULE':
 				str = to_source(args[0]) + ' > ' + to_source(args[1])
 				return source_to_node(str)
-
-			if node.func.attr == 'Not':
-				# get argument of the z3.Not
-				content = ast.UnaryOp()
-				content.op = ast.Not()
-				content.operand = args[0]
-				return content
+			# if node.func.attr == 'Not':
+			# 	# get argument of the z3.Not
+			# 	content = ast.UnaryOp()
+			# 	content.op = ast.Not()
+			# 	content.operand = args[0]
+			# 	return content
 	return node
 

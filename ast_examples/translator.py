@@ -43,8 +43,8 @@ class CondtionTransformer(ast.NodeTransformer):
 		str_temp = ''
 		temp_list_insert = []
 		for arg in func_args:
-			str_temp += 'if not '
-			str_temp += astor.to_source(arg)[:-1] + ':' + '\n'
+			str_temp += 'if Not ('
+			str_temp += astor.to_source(arg)[:-1] + '):' + '\n'
 			str_temp += '    '
 			str_temp += 'return -ECODE' + '\n'
 			#print str_temp

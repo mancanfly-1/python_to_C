@@ -2,7 +2,7 @@ import z3
 from libirpy import util
 import hv6py.kernel.spec.datatypes as dt
 
-def int_sys_set_runnable(old, pit_t_pid):
+def int_sys_set_runnable(old, pid_t_pid):
     cond = z3.And(
         is_pid_valid(pid),
         old.procs[pid].ppid == old.current,

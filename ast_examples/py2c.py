@@ -13,6 +13,8 @@ current_func = ''
 current_node = None
 
 
+
+
 # the node must be z3.And or z3.Or
 def print_z3_And_Or_condition(node):
 	str_return =''
@@ -25,7 +27,7 @@ def replace(line):
 	line = line.replace(' not ', '!')
 	# line = line.replace('(and ', ' && ')
 	# line = line.replace('(or ', ' || ')
-	line = line.replace('(not ', '(!')
+	line = line.replace('Not(', '!(')
 	return line
 def Python_to_C(root, path):
 	# first repalce and do other thing
@@ -45,39 +47,57 @@ class CodeVisitor(ast.NodeVisitor):
 		#print type(node).__name__
 		ast.NodeVisitor.generic_visit(self, node)
 		return node
- 
-	def visit_Attribute(self, node):
-		# if hasattr(node, "attr") and (node.attr in ["And", "Or",'BitVecVal']):
-		# 	if hasattr(node.value, "id") and node.value.id == "z3":
-		# 		print('== we have visit z3.And or z3.OR ==')
-		# 		node = ast.Name(str(node.attr), ast.Load())
-		ast.NodeVisitor.generic_visit(self, node)  
+
+	def visit_bodys(self, node):
+		if type(node) == ast.Assign or type(node) == ast.AugAssign or type(node) == ast.Return or type(node) == ast.Call:
+			print(to_source(node) + ';')
+			src_code.append(to_source(node) + ';')
+		if type(node) == ast.If:
+			self.visit_If(node)
 
 	def visit_If(self, node):
-		cond = get_condition_expression(node.test)
 		cond = to_source(node.test)
 		str_src = "if (" + cond + "){"
 		print str_src
 		src_code.append(str_src)
-		
-		ast.NodeVisitor.generic_visit(self, node)
-		print ("}")
-		src_code.append("}")
+		for itm in node.body:
+			self.visit_bodys(itm)
+		print '}'
+		src_code.append('}')
+		if len(node.orelse) > 0:
+			str_src = 'else {'
+			print str_src
+			src_code.append(str_src)
+			for itm in node.orelse:
+				self.visit_bodys(itm)
+			print ("}")
+			src_code.append('}')
+		return node
 
-	def visit_Assign(self, node): 
-		
+	def visit_Assign(self, node): 	
 		print(astor.to_source(node)[:-1] + ';')
 		src_code.append(astor.to_source(node)[:-1] + ';')
-		ast.NodeVisitor.generic_visit(self, node)
+		# ast.NodeVisitor.generic_visit(self, node)
+		return node
 
 	def visit_AugAssign(self, node):
 		print(astor.to_source(node)[:-1] + ';')
 		src_code.append(astor.to_source(node)[:-1] + ';')
+		ast.NodeVisitor.generic_visit(self, node)
+		return node
 
 	def visit_Return(self, node):
+		
 		print (get_node_code(node) + ';')
 		src_code.append(get_node_code(node) + ';')
-		ast.NodeVisitor.generic_visit(self, node)
+		# ast.NodeVisitor.generic_visit(self, node)
+		return node
+
+	def visit_Call(self, node):
+		print (get_node_code(node) + ';')
+		src_code.append(get_node_code(node) + ';')
+		# ast.NodeVisitor.generic_visit(self, node)
+		return node
 
 	def visit_FunctionDef(self, node):
 		current_func = node.name
@@ -97,6 +117,8 @@ class CodeVisitor(ast.NodeVisitor):
 		ast.NodeVisitor.generic_visit(self, node)
 		print("}")
 		src_code.append('}')
+		#ast.NodeVisitor.generic_visit(self, node)
+		return node
 
 	def visit_Import(self, node):
 		for item in node.names:

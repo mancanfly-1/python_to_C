@@ -1,14 +1,14 @@
 include z3.h
 include util.h
 include hv6py.kernel.spec.datatypes.h
-int sys_set_runnable(pit_t pid){
-if (!is_pid_valid(pid)){
+int sys_set_runnable(pid_t pid){
+if (!(is_pid_valid(pid))){
 return -ECODE;
 }
-if (!procs[pid].ppid == current){
+if (!(procs[pid].ppid == current)){
 return -ECODE;
 }
-if (!procs[pid].state == proc_state.PROC_EMBRYO){
+if (!(procs[pid].state == proc_state.PROC_EMBRYO)){
 return -ECODE;
 }
 new = copy();
@@ -16,20 +16,20 @@ procs[pid].state = proc_state.PROC_RUNNABLE;
 return 0;
 }
 int sys_dup2(fd oldfd,pid_t pid,fd newfd){
-if (!is_pid_valid(pid)){
+if (!(is_pid_valid(pid))){
 return -ECODE;
 }
-if (!(pid == current || procs[pid].ppid == current && procs[pid].state ==
+if (!(pid == current || procs[pid].ppid == current && old.procs[pid].state ==
     proc_state.PROC_EMBRYO)){
 return -ECODE;
 }
-if (!is_fd_valid(oldfd)){
+if (!(is_fd_valid(oldfd))){
 return -ECODE;
 }
-if (!is_fn_valid(procs[current].ofile[oldfd])){
+if (!(is_fn_valid(procs[current].ofile[oldfd]))){
 return -ECODE;
 }
-if (!is_fd_valid(newfd)){
+if (!(is_fd_valid(newfd))){
 return -ECODE;
 }
 if (current == pid && oldfd == newfd){
@@ -43,18 +43,26 @@ files[newfn].refcnt -= 1;
 ref = files[newfn].refcnt();
 if (ref == 0){
 files[newfn].type = file_type.FD_NONE;
+}
+else {
 files[newfn].type = files[newfn].type;
 }
 if (ref == 0){
 files[newfn].value = 0;
+}
+else {
 files[newfn].value = files[newfn].value;
 }
 if (ref == 0){
 files[newfn].offset = 0;
+}
+else {
 files[newfn].offset = files[newfn].offset;
 }
 if (ref == 0){
 files[newfn].omode = 0;
+}
+else {
 files[newfn].omode = files[newfn].omode;
 }
 }

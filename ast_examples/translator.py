@@ -320,7 +320,7 @@ class DetailTransformer(ast.NodeTransformer):
 			node = source_to_node(str_assgin)
 		return node
 
-	def visist_Attribute(self, node):
+	def visit_Attribute(self, node):
 		# if node.attr in list_lib and node.value == ast.Name:
 		# 	new_node = ast.Name()
 		# 	new_node.id = node.attr
@@ -329,8 +329,11 @@ class DetailTransformer(ast.NodeTransformer):
 		str_source = to_source(node)
 		print list_lib
 		for item in list_lib:
-			if str_source.startwith(item + '.'):
-				node = source_to_node(str_source[(len(item) + 1):])
+			if str_source.startswith(item + '.'):
+				print str_source[(len(item) + 1):]
+
+				node = ast.parse(str_source[(len(item) + 1):]).body[0].value
+				print node
 		ast.NodeTransformer.generic_visit(self, node)
 		return node
 

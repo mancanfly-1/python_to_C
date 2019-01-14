@@ -43,7 +43,6 @@ def util_if(node, func_name):
 		if_node.orelse.append(source_to_node(to_source(targets[0]) + ' = ' + astor.to_source(args[2])))
 		node = if_node
 	if type(targets[0]) == ast.Name and targets[0].id not in collector.Dic_new_state[func_name] and targets[0].id not in collector.Dic_old_state[func_name]:
-		print '--------------'
 		if targets[0].id not in get_all_condtions(targets[0].id, func_name):
 			if_node = ast.If()
 			if_node.test = args[0]

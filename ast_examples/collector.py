@@ -46,7 +46,6 @@ class CollectVisitor(ast.NodeVisitor):
 			# collect old state
 			if not Dic_old_state.has_key(current_def):
 				Dic_old_state[current_def] = node.args[0].id
-				print Dic_old_state[current_def]
 				for item in node.args:
 					Dic_func_args[current_def].append(item.id)
 		else:
@@ -65,7 +64,6 @@ class CollectVisitor(ast.NodeVisitor):
 
 	def visit_ImportFrom(self, node):
 		for item in node.names:
-
 			if item.asname == None:
 				list_lib.append(item.name)
 			else:
@@ -73,18 +71,6 @@ class CollectVisitor(ast.NodeVisitor):
 		ast.NodeVisitor.generic_visit(self, node)
 
 	def visit_Assign(self, node):
-		# collect new state
-		# if type(node.value) == ast.Call and type(node.value.func) == ast.Attribute:
-		# 	if type(node.value.func.value) == ast.Name and node.value.func.attr == 'copy':
-		# 		if node.value.func.value.id in Dic_old_state[current_def] or Dic_new_state[current_def]:
-		# 			Dic_new_state[current_def].append(node.targets[0].id)
-		# 	if type(node.value.func.value) == ast.Name and node.value.func.attr == 'If':
-		# 		list_args = node.value.args
-		# 		# utile.If(a,b,c)
-		# 		a = list_args[1]
-		# 		b = list_args[2]
-		# 		if a.id in Dic_new_state[current_def] and b.id in Dic_new_state[current_def]:
-		# 			Dic_new_state[current_def].append(node.targets[0].id)
 		ast.NodeVisitor.generic_visit(self, node)			
 
 	def bool_condtion(self, arg1, arg2):
@@ -96,23 +82,6 @@ class CollectVisitor(ast.NodeVisitor):
 		return False
 
 	def visit_Call(self, node):	
-		# collect condtions	
-		# if type(node.func) == ast.Attribute:
-		# 	# check if invoke util.If function
-		# 	if node.func.attr == 'If' and type(node.func.value) == ast.Name and node.func.value.id == 'util':
-		# 		# new3 = util.If(cond2, new2, new)
-		# 		# get argument[1][2]
-		# 		list_args = node.args
-		# 		a = list_args[1]
-		# 		b = list_args[2]
-		# 		# Dic_condition = {'funcdef':{'condition':[new1, old], 'condition2':[new1, new2],...}, 'funcdef2':{...}}
-		# 		if type(a) == ast.Name and type(b) == ast.Name:
-		# 			if self.bool_condtion(a.id, b.id):
-		# 				# add condition
-		# 				cond = list_args[0].id
-		# 				tmp_cond = [a.id,b.id]
-		# 				Dic_condition[current_def][cond] = tmp_cond
-		# 				print Dic_condition
 		ast.NodeVisitor.generic_visit(self, node)
 
 	def visit_Return(self, node):
@@ -138,7 +107,6 @@ def get_condtions(new1):
 		if type(body) == ast.Assign and len(body.targets) == 1:	
 			if type(body.targets[0]) == ast.Name:
 				if body.targets[0].id == new1 and node_euqals_util_If(body.value):
-					print body.targets[0].id, '-------'
 					args = body.value.args
 					cond1 = astor.to_source(args[0])[:-1]
 					new11 = astor.to_source(args[1])[:-1]
@@ -169,6 +137,7 @@ def Collect(tree):
 	print 'Dic_old_state:',Dic_old_state
 	print 'Dic_new_state:',Dic_new_state
 	print 'Dic_func_args:', Dic_func_args
+	print 'list_lib:', list_lib
 
 
 

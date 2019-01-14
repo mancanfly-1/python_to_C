@@ -19,7 +19,6 @@ class CondtionTransformer(ast.NodeTransformer):
 	# Dic_condition = {'funcdef':{'condition':[new1, old], 'condition2':[new1, new2],...}, 'funcdef2':{...}}
 	def get_cond_target(self, cond_name):		
 		index = 0
-		print cond_name
 		for node in Dic_func_bodys[current_func]:
 			if type(node) ==  ast.Assign and len(node.targets) == 1 and type(node.targets[0]) == ast.Name and node.targets[0].id == cond_name:
 				return node, index
@@ -92,7 +91,6 @@ class CondtionTransformer(ast.NodeTransformer):
 		str_value = astor.to_source(state_top_node.value)[:-1]
 
 		if str_value.split('.')[0] in Dic_new_state[current_func] and str_value.split('.')[1] == 'copy()':
-			print '-------------'
 			self.add_body(insert_node, str_value.split('.')[0])
 
 		start_index = self.get_start_new(state_name)
@@ -118,10 +116,8 @@ class CondtionTransformer(ast.NodeTransformer):
 		return list_ret
 
 	def visit_FunctionDef(self, node):
-		print 'visit_FunctionDef'
 		global current_func
 		current_func = node.name
-		print Dic_condition[current_func], '========'
 		insert_index = 0
 		insert_node = node
 		# clear all of current node
@@ -141,7 +137,6 @@ class CondtionTransformer(ast.NodeTransformer):
 				node.body.append(Dic_func_bodys[current_func][i])
 				i+=1
 		insert_index += i
-		print astor.to_source(node)
 		# traverse the condition
 		i = 0
 		while i < len(Dic_condition[current_func]):
@@ -157,7 +152,6 @@ class CondtionTransformer(ast.NodeTransformer):
 			state_node_2, index_2 = self.get_state_target(state_name_2)	# new2 = ...
 
 			cond_node, index = self.get_cond_target(cond_name)
-			print cond_node, i
 			# create build node
 			if i == 0 and state_name_2 == Dic_old_state[current_func]:
 				# get cond_name mapping to the condition node.
@@ -327,13 +321,19 @@ class DetailTransformer(ast.NodeTransformer):
 		return node
 
 	def visist_Attribute(self, node):
-		if node.attr in list_lib and node.value == ast.Name:
-			new_node = ast.Name()
-			new_node.id = node.attr
-			new_node.ctx = ast.Load()
-			node = new_node
+		# if node.attr in list_lib and node.value == ast.Name:
+		# 	new_node = ast.Name()
+		# 	new_node.id = node.attr
+		# 	new_node.ctx = ast.Load()
+		# 	node = new_node
+		str_source = to_source(node)
+		print list_lib
+		for item in list_lib:
+			if str_source.startwith(item + '.'):
+				node = source_to_node(str_source[(len(item) + 1):])
 		ast.NodeTransformer.generic_visit(self, node)
-		return node	
+		return node
+
 
 def Translate(root_node):
 	# second, detail translate
@@ -342,6 +342,7 @@ def Translate(root_node):
 
 	print astor.to_source(tree)
 	detailTrans = DetailTransformer()
+	print '================== start doing detail in python code =================='
 	tree = detailTrans.visit(tree)
 	# delete all of new and old state.
 	for i in range(0, len(tree.body)):
@@ -356,5 +357,6 @@ def Translate(root_node):
 			tree.body[i] = ast.parse(str_del_new_old_state)
 	# translate condtions jump.
 	print astor.to_source(tree)
+	print '================== end doing detail in python code =================='
 	
 	

@@ -24,13 +24,18 @@ if __name__ == "__main__":
 		code = open(sys.argv[1]).read()
 		tree = ast.parse(code, sys.argv[1])
 		# collect a lot of things
+		print '================== Start Collect Information =================='
 		Collect(tree)
+		print '================== end Collect Information ==================\n'
 		# add parent node 
 		add_parent(tree)
-
+		print '================== Start translate structure =================='
 		Translate(tree)
+		print '================== end translate structure ==================\n'
 		path = sys.argv[1][:-2] + "c"
+		print '================== start parsing python to C =================='
 		Python_to_C(tree, path)
+		print '================== end parsing python to C =================='
 		#main(tree, path)
 	else:
 		print('Please provdie a filename as arguments!!')

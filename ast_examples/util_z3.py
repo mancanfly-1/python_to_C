@@ -72,7 +72,6 @@ def Deal_z3_function(node):
 		if type(node.func.value) == ast.Name and node.func.value.id == 'z3':
 			args = node.args
 			if node.func.attr == 'BitVecVal':
-				print args[0]
 				return args[0]
 			if node.func.attr == 'And' or node.func.attr == 'Or':			
 				content = ast.BoolOp()
@@ -92,10 +91,8 @@ def Deal_z3_function(node):
 
 			if node.func.attr == 'Not':
 				# get argument of the z3.Not
-				print '---------'
 				content = ast.UnaryOp()
 				content.op = ast.Not()
-				print args[0]
 				content.operand = args[0]
 				return content
 	return node

@@ -327,13 +327,9 @@ class DetailTransformer(ast.NodeTransformer):
 		# 	new_node.ctx = ast.Load()
 		# 	node = new_node
 		str_source = to_source(node)
-		print list_lib
 		for item in list_lib:
 			if str_source.startswith(item + '.'):
-				print str_source[(len(item) + 1):]
-
 				node = ast.parse(str_source[(len(item) + 1):]).body[0].value
-				print node
 		ast.NodeTransformer.generic_visit(self, node)
 		return node
 

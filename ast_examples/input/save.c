@@ -1,20 +1,6 @@
 include z3.h
 include util.h
 include hv6py.kernel.spec.datatypes.h
-int sys_set_runnable(pid_t pid){
-if (!(is_pid_valid(pid))){
-return -ECODE;
-}
-if (!(procs[pid].ppid == current)){
-return -ECODE;
-}
-if (!(procs[pid].state == proc_state.PROC_EMBRYO)){
-return -ECODE;
-}
-new = copy();
-procs[pid].state = proc_state.PROC_RUNNABLE;
-return 0;
-}
 int sys_dup2(fd oldfd,pid_t pid,fd newfd){
 if (!(is_pid_valid(pid))){
 return -ECODE;

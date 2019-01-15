@@ -2,15 +2,14 @@ import z3
 from libirpy import util
 import hv6py.kernel.spec.datatypes as dt
 
-def int_sys_set_runnable(old, pid_t_pid):
-    cond = z3.And(
-        is_pid_valid(pid),
-        old.procs[pid].ppid == old.current,
-        old.procs[pid].state == dt.proc_state.PROC_EMBRYO)
-    print old.procs[old.current].state
-    new = old.copy()
-    new.procs[pid].state = dt.proc_state.PROC_RUNNABLE
-    return cond, util.If(cond, new, old)
+# def int_sys_set_runnable(old, pid_t_pid):
+#     cond = z3.And(
+#         is_pid_valid(pid),
+#         old.procs[pid].ppid == old.current,
+#         old.procs[pid].state == dt.proc_state.PROC_EMBRYO)
+#     new = old.copy()
+#     new.procs[pid].state = dt.proc_state.PROC_RUNNABLE
+#     return cond, util.If(cond, new, old)
 
 def int_sys_dup2(old, fd_oldfd, pid_t_pid, fd_newfd):
     cond = z3.And(
